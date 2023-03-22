@@ -1,0 +1,191 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>
+      Basemaps with different projections | Sample | ArcGIS Maps SDK for
+      JavaScript 4.26
+    </title>
+
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.26/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.26/"></script>
+
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+      #srDiv {
+        height: 40px;
+        padding: 10px;
+      }
+    </style>
+
+    <script>
+      require([
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/portal/Portal",
+        "esri/widgets/BasemapGallery",
+        "esri/widgets/BasemapGallery/support/PortalBasemapsSource",
+        "esri/widgets/Expand",
+        "esri/Graphic",
+        "esri/geometry/Point",
+        "esri/symbols/SimpleMarkerSymbol",
+        "esri/PopupTemplate"
+      ], function (
+        Map,
+        MapView,
+        Portal,
+        BasemapGallery,
+        PortalBasemapsSource,
+        Expand,
+        Graphic,
+        Point,
+        SimpleMarkerSymbol,
+        PopupTemplate
+      ) {
+        const portal = new Portal();
+
+        // source for basemaps from a portal group
+        // containing basemaps with different projections
+        const source = new PortalBasemapsSource({
+          portal,
+          query: {
+            id: "bdb9d65e0b5c480c8dcc6916e7f4e099"
+          }
+        });
+
+        const map = new Map({
+          basemap: {
+            portalItem: {
+              id: "8d91bd39e873417ea21673e0fee87604" // nova basemap
+            }
+          }
+        });
+
+        // THE ISLAND RESORT VIEW
+        const view = new MapView({
+          container: "viewDiv",
+          map: map,
+          center: [-86.617928, 30.458776], // THE ISLAND RESORT,
+          zoom: 10,
+          constraints: {
+            snapToZoom: false
+          }
+        });
+        view.ui.add("srDiv", "top-right");
+
+        const bgExpand = new Expand({
+          view,
+          content: new BasemapGallery({ source, view }),
+          expandIconClass: "esri-icon-basemap"
+        });
+        view.ui.add(bgExpand, "top-right");
+
+        view.watch("spatialReference", () => {
+          document.getElementById(
+            "srDiv"
+          ).innerHTML = `view.spatialReference.wkid = <b>${view.spatialReference.wkid}</b>`;
+        });
+
+        // Circle button locations and comments
+        const locations = [
+          {
+            name: "Eglin",
+            coordinates: [-86.5533, 30.4801],
+            comment: "JAA = 3.5M, " + "Diesel = 73K, " + "Acft Availability = 40 / 42",
+            color: [144, 255, 144],
+            style: "circle",
+          },
+          {
+            name: "Hurlburt",
+            coordinates: [-86.68677, 30.42292],
+            comment: "JAA = 2.8M, " + "Diesel = 36K, " + "Acft Availability = 28 / 32",
+            color: [144, 255, 144],
+            style: "circle",
+          },
+          {
+            name: "Duke",
+            coordinates: [-86.52278, 30.650278],
+            comment: "JAA = 1.5M, " + "Diesel = 5K, " + "Acft Availability = 14 / 14",
+            color: [144, 255, 144],
+            style: "circle",
+          },
+          {
+            name: "VPS - Civilian",
+            coordinates: [-86.5218, 30.4833],
+            comment: "JAA = 3.7M,\n" + "Contract Status: Current",
+            color: [144, 255, 144], //[255,255,102]
+            outline: {
+                color: [255, 255, 255],
+                width: 2,
+            },
+            style: "circle",
+          },
+          {
+            name: "Barge",
+            coordinates: [-86.66662, 30.38501],
+            comment: "JAA = 1.25M, Eglin: 20 hrs, Hurlburt: 48 hrs",
+            color: [135, 206, 235],
+            style: "square",
+          },
+          {
+            name: "Tank Truck",
+            coordinates: [-86.52937, 30.56761],
+            comment: "JAA = 1.25M, Duke:  2 hrs",
+            color: [135, 206, 235],
+            style: "triangle",
+          }
+        ];
+
+        locations.forEach((location) => {
+          // Create a Point geometry
+          const point = new Point({
+            longitude: location.coordinates[0],
+            latitude: location.coordinates[1]
+          });
+
+          // Create a SimpleMarkerSymbol for the circle button
+          const markerSymbol = new SimpleMarkerSymbol({
+            style: location.style,
+            color: location.color,
+            outline: location.outline,
+            size: "16px"
+          });
+
+          // Create a PopupTemplate for the text box
+          const popupTemplate = new PopupTemplate({
+            title: location.name,
+            content: location.comment
+          });
+
+          // Create a Graphic object for the circle button
+          const buttonGraphic = new Graphic({
+            geometry: point,
+            symbol: markerSymbol,
+            popupTemplate: popupTemplate
+          });
+
+          // Add the circle button to the view
+          view.graphics.add(buttonGraphic);
+        });
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+    <div id="srDiv" class="esri-widget"></div>
+  </body>
+</html>
