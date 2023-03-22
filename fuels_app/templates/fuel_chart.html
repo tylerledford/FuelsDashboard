@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horizontal Bar Chart</title>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <style>
+
+    .bar {
+      fill: steelblue;
+    }
+
+
+    .chart-title {
+      font-family: sans-serif;
+      font-size: 16px;
+      font-weight: bold;
+      text-anchor: middle;
+    }
+    
+    .dashboard-section {
+        position: absolute;
+        top: 5;
+        left: 5;
+    }
+
+    .chart-container {
+      position: relative;
+    }
+
+  </style>
+</head>
+<body>
+  <a href="/supply-dashboard">Other Dashboard</a>
+  <a href="/kyle-html">Kyle HTML</a>
+    <div class="chart-container"></div>
+
+    <script>
+
+        function formatFuelText(d) {
+          return `${d.currentFuel} (${Math.round((d.currentFuel / d.fuelCapacity) * 100)}%)`;
+        }
+
+        function barColor(d) {
+          const percentage = (d.currentFuel / d.fuelCapacity) * 100;
+          if (percentage >= 40) {
+              return "green";
+          } else {
+              return "red";
+          }
+        }
+
+        // Replace the data array with the data from your Pocketbase backend.
+        // Pocket base data is here
+        const data = [
+            { baseName: "Eglin", fuelCapacity: 100000, currentFuel: 80000, DDR: 10, DOS: 7, type: 'military'},
+            { baseName: "Hurlburt", fuelCapacity: 150000, currentFuel: 80000,  DDR: 12, DOS: 8, type: 'military'},
+            { baseName: "Duke", fuelCapacity: 200000, currentFuel: 100000, DDR: 15, DOS: 9, type: 'military'},
+            { baseName: "VPS", fuelCapacity: 300000, currentFuel: 120000, DDR: 15, DOS: 9, type: 'civilian'},
+  
+        ];
+
+
+
+        const margin = { top: 50, right: 80, bottom: 70, left: 100 };
+        const width = 960 - margin.left - margin.right;
+        const height = 500 - margin.top - margin.bottom;
+
+        const x = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d.fuelCapacity)])
+        .range([0, width]);
+
+
+        const y = d3.scaleBand()
+        .domain(data.map(d => d.baseName))
+        .range([0, height])
+        .padding(0.5); // Increase padding value to create more space between bars
+
+
+
+        const svg = d3.select(".chart-container")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        // Create fuel capacity bars
+        svg.selectAll(".capacity-bar")
+            .data(data)
+            .enter().append("rect")
+            .attr("class", "capacity-bar")
+            .attr("x", d => x(0))
+            .attr("y", d => y(d.baseName))
+            .attr("width", d => x(d.fuelCapacity))
+            .attr("height", y.bandwidth())
+            .attr("fill", "steelblue");
+
+        svg.selectAll(".bar-current")
+          .data(data)
+          .enter().append("rect")
+          .attr("class", "bar-current")
+          .attr("y", d => y(d.baseName))
+          .attr("height", y.bandwidth())
+          .attr("x", 0)
+          .attr("width", d => x(d.currentFuel))
+          .attr("fill", d => {
+              const percentage = (d.currentFuel / d.fuelCapacity) * 100;
+              if (percentage >= 40) {
+                  return "green";
+              } else {
+                  return "red";
+              }
+          });
+
+        svg.selectAll(".fuel-text")
+          .data(data)
+          .enter().append("text")
+          .attr("class", "fuel-text")
+          .text(d => {
+              const percentage = (d.currentFuel / d.fuelCapacity) * 100;
+              return percentage >= 40 ? d.currentFuel + " (" + Math.round(percentage) + "%)" : d.currentFuel;
+          })
+          .attr("x", d => x(d.currentFuel) - 5)
+          .attr("y", d => {
+              const percentage = (d.currentFuel / d.fuelCapacity) * 100;
+              return percentage >= 40 ? y(d.baseName) + y.bandwidth() / 2 : y(d.baseName) + y.bandwidth() / 3;
+          })
+          .attr("text-anchor", "end")
+          .attr("dominant-baseline", "central")
+          .attr("fill", "white")
+          .attr("font-family", "sans-serif")
+          .attr("font-size", d => {
+              const percentage = (d.currentFuel / d.fuelCapacity) * 100;
+              return percentage >= 40 ? "12px" : "10px";
+          });
+
+        svg.selectAll(".fuel-text-percentage")
+          .data(data)
+          .enter().append("text")
+          .attr("class", "fuel-text-percentage")
+          .text(d => {
+              const percentage = Math.round((d.currentFuel / d.fuelCapacity) * 100) + '%';
+              return percentage;
+          })
+          .attr("x", d => x(d.currentFuel) - 5)
+          .attr("y", d => {
+              const percentageValue = (d.currentFuel / d.fuelCapacity) * 100;
+              return percentageValue >= 40 ? y(d.baseName) + y.bandwidth() * 2 / 3 : y(d.baseName) + y.bandwidth() * 2 / 3;
+          })
+          .attr("text-anchor", "end")
+          .attr("dominant-baseline", "central")
+          .attr("fill", "white")
+          .attr("font-family", "sans-serif")
+          .attr("font-size", d => {
+              const percentageValue = (d.currentFuel / d.fuelCapacity) * 100;
+              return percentageValue >= 40 ? "0px" : "10px";
+          });
+
+
+        // Add total fuel capacity text
+        svg.selectAll(".total-fuel-capacity")
+          .data(data)
+          .enter().append("text")
+          .attr("class", "total-fuel-capacity")
+          .text(d => d.fuelCapacity)
+          .attr("x", d => x(d.fuelCapacity) + 10)
+          .attr("y", d => y(d.baseName) - y.bandwidth() / 5) // Adjust this value for more space between the fuel capacity text and bar
+          .attr("text-anchor", "end")
+          .attr("fill", "black")
+          .attr("font-family", "sans-serif")
+          .attr("font-size", "10px");  
+
+
+        // Add the chart title
+        svg.append("text")
+        .attr("class", "chart-title")
+        .attr("x", width / 2)
+        .attr("y", - margin.top / 8)
+        .text("Fuel Supply");
+
+
+        // Add base name label above the bar
+        svg.selectAll(".base-name")
+            .data(data)
+            .enter().append("text")
+            .attr("class", "base-name")
+            .text(d => d.type === "civilian" ? `${d.baseName} (civilian)` : d.baseName)
+            .attr("x", 0)
+            .attr("y", d => y(d.baseName) - y.bandwidth() / 6) // Adjust this value for more space between the base name and bar
+            .attr("text-anchor", "start")
+            .attr("font-size", "12px"); 
+
+        svg.selectAll(".ddr")
+            .data(data)
+            .enter().append("text")
+            .attr("class", "ddr")
+            .text(d => `DDR: ${d.DDR}`)
+            .attr("x", d => x(d.fuelCapacity) / 2 - 40) // Set the x position with an offset
+            .attr("y", d => y(d.baseName) + y.bandwidth() * 1.25) // Adjust this value for more space between DDR labels and bar
+            .attr("text-anchor", "middle")
+            .attr("font-size", "10px");  
+
+
+        // Add DOS labels below the bar
+        svg.selectAll(".dos")
+            .data(data)
+            .enter().append("text")
+            .attr("class", "dos")
+            .text(d => `DOS: ${d.DOS}`)
+            .attr("x", d => x(d.fuelCapacity) / 2 + 40) // Set the x position with an offset
+            .attr("y", d => y(d.baseName) + y.bandwidth() * 1.25) // Adjust this value for more space between DOS labels and bar
+            .attr("text-anchor", "middle")          
+            .attr("font-size", "10px");  
+
+         
+
+    </script>
+</body>
+</html>

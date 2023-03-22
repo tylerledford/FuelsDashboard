@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fuel Supply Dashboard</title>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <style>
+    .chart-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .info-box {
+      display: inline-block;
+      padding: 10px;
+      margin: 5px;
+      border: 1px solid #ccc;
+    }
+
+    #chart {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .bar {
+      fill: steelblue;
+    }
+
+    .bar-current {
+      fill: orange;
+    }
+
+    .min-line {
+      stroke: red;
+      stroke-width: 2;
+    }
+
+    .max-line {
+      stroke: green;
+      stroke-width: 2;
+    }
+
+    .axis text {
+      font-size: 12px;
+    }
+
+    .axis path,
+    .axis line {
+      fill: none;
+      stroke: #000;
+      shape-rendering: crispEdges;
+    }
+  </style>
+</head>
+<body>
+  <div class="chart-container">
+    <div class="info-box" id="total_mil_jeta_fuel"></div>
+    <div class="info-box" id="total_commercial_jeta_fuel"></div>
+    <div class="info-box" id="total_mil_diesel_fuel"></div>
+    <div class="info-box" id="total_days_supply"></div>
+    <div class="info-box" id="date_of_next_fuel_receipt"></div>
+    <svg id="chart"></svg>
+  </div>
+
+  <script>
+    // Sample data
+    const data = [
+      {
+        name: "Base A",
+        currentFuel: 400,
+        totalFuel: 800,
+        minFuel: 300,
+        maxFuel: 700,
+        DDR: 100,
+        DOS: 10,
+      },
+      {
+        name: "Base B",
+        currentFuel: 900,
+        totalFuel: 1200,
+        minFuel: 800,
+        maxFuel: 1100,
+        DDR: 200,
+        DOS: 8,
+      },
+      {
+        name: "Base C",
+        currentFuel: 300,
+        totalFuel: 600,
+        minFuel: 200,
+        maxFuel: 500,
+        DDR: 50,
+        DOS: 15,
+      },
+    ];
+
+    const margin = { top: 30, right: 20, bottom: 60, left: 150 };
+    const width = 960 - margin.left - margin.right;
+    const height = 500 - margin.top - margin.bottom;
+
+    const x = d3.scaleLinear().range([0, width]);
+    const y = d3.scaleBand().range([height, 0]).padding(0.3);
+
+    const svg = d3
+      .select("#chart")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
+
+
+    // Set domains
+    x.domain([0, d3.max(data, (d) => d.totalFuel)]);
+    y.domain(data.map((d) => d.name));
+
+    // Add bars for total fuel
+    svg.selectAll(".bar")
+      .data(data)
+      .enter()
+      .append("rect")
+      .attr("class", "bar")
+      .attr("x", 0)
+      .attr("y", (d) => y(d.name))
+      .attr("width", (d) => x(d.totalFuel))
+      .attr("height", y.bandwidth());
+
+    // Add bars for current fuel
+    svg.selectAll(".bar-current")
+      .data(data)
+      .enter()
+      .append("rect")
+      .attr("class", "bar-current")
+      .attr("x", 0)
+      .attr("y", (d) => y(d.name))
+      .attr("width", (d) => x(d.currentFuel))
+      .attr("height", y.bandwidth());
+
+    // Add min fuel lines
+    svg.selectAll(".min-line")
+      .data(data)
+      .enter()
+      .append("line")
+      .attr("class", "min-line")
+      .attr("x1", (d) => x(d.minFuel))
+      .attr("y1", (d) => y(d.name))
+      .attr("x2", (d) => x(d.minFuel))
+      .attr("y2", (d) => y(d.name) + y.bandwidth());
+
+    // Add max fuel lines
+    svg.selectAll(".max-line")
+      .data(data)
+      .enter()
+      .append("line")
+      .attr("class", "max-line")
+      .attr("x1", (d) => x(d.maxFuel))
+      .attr("y1", (d) => y(d.name))
+      .attr("x2", (d) => x(d.maxFuel))
+      .attr("y2", (d) => y(d.name) + y.bandwidth());
+
+    // Add axes
+    svg.append("g")
+      .attr("class", "axis")
+      .call(d3.axisLeft(y).tickFormat(() => ""))
+      .selectAll("text") // Add custom labels to ticks
+      .data(data)
+      .enter()
+      .append("text")
+      .text(d => d.name)
+      .attr("x", -9)
+      .attr("y", d => y(d.name) + y.bandwidth() / 2)
+      .attr("dy", "0.32em")
+      .append("tspan") // Add DDR as a tspan element
+      .text(d => `DDR: ${d.DDR}`)
+      .attr("x", -9)
+      .attr("dy", "1.2em")
+      .append("tspan") // Add DOS as another tspan element
+      .text(d => `DOS: ${d.DOS}`)
+      .attr("x", -9)
+      .attr("dy", "1.2em");
+
+    svg.append("g")
+      .attr("class", "axis")
+      .attr("transform", `translate(0,${height})`)
+      .call(d3.axisBottom(x));
+
+    // Add x-axis label
+    svg.append("text")
+      .attr("transform", `translate(${width / 2},${height + margin.bottom - 10})`)
+      .style("text-anchor", "middle")
+      .text("Fuel Amount (1000G)");
+
+    // Get elements by their ID
+    document.getElementById("total_mil_jeta_fuel").innerText = "Total Mil JetA Fuel: " + "VALUE";
+    document.getElementById("total_commercial_jeta_fuel").innerText = "Total Commercial JetA Fuel: " + "VALUE";
+    document.getElementById("total_mil_diesel_fuel").innerText = "Total Mil Diesel Fuel: " + "VALUE";
+    document.getElementById("total_days_supply").innerText = "Total days supply: " + "VALUE";
+    document.getElementById("date_of_next_fuel_receipt").innerText = "Date of Next Fuel Receipt: " + "VALUE";
+
+  </script>
+</body>
+</html>

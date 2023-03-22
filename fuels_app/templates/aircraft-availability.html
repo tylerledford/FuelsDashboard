@@ -1,0 +1,124 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aircraft Availability</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        svg {
+            font: 10px sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        // Define data - call from PB
+        const data = [
+            { name: "Eglin", current_inventory: 90, total_capacity: 100 },
+            { name: "Hurlburt", current_inventory: 70, total_capacity: 80 },
+            { name: "Duke", current_inventory: 20, total_capacity: 30 },
+            { name: "VPS", current_inventory: 80, total_capacity: 90 }
+        ];
+
+        // Set dimensions and margins
+
+        const margin = ({ top: 30, right: 30, bottom: 30, left: 50 });
+        const width = 1400;
+        const height = data.length * 50 + margin.top + margin.bottom;
+
+
+        // Define scales
+
+        const x = d3.scaleLinear()
+            .domain([0, 100])
+            .range([margin.left, width - margin.right]);
+ 
+        const y = d3.scaleBand()
+            .domain(data.map(d => d.name))
+            .range([margin.top, height - margin.bottom])
+            .padding(0.2); //distance between bars
+
+        // Create SVG container
+        const svg = d3.select("body")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // Draw stacked bars
+
+        svg.append("g")
+            .selectAll("rect")
+            .data(data)
+            .join("rect")
+            .attr("x", d => x(0))
+            .attr("y", d => y(d.name))
+            .attr("width", d => x(d.current_inventory) - x(0))
+            .attr("height", y.bandwidth())
+            .attr("fill", "steelblue");
+
+ 
+       svg.append("g")
+            .selectAll("rect")
+            .data(data)
+            .join("rect")
+            .attr("x", d => x(d.current_inventory))
+            .attr("y", d => y(d.name))
+            .attr("width", d => x(d.total_capacity - d.current_inventory))
+            .attr("height", y.bandwidth())
+            .attr("fill", "lightsteelblue");
+
+
+         // Add x-axis
+
+        svg.append("g")
+            .attr("transform", `translate(0,${height - margin.bottom})`)
+            .call(d3.axisBottom(x));
+
+        // Add y-axis
+        svg.append("g")
+            .attr("transform", `translate(${margin.left},0)`)
+            .call(d3.axisLeft(y));
+
+
+        // Add chart title
+        svg.append("text")
+            .attr("x", (width / 2))
+            .attr("y", margin.top / 2)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+            .style("font-weight", "bold")
+            .text("Aircraft Availability");
+
+
+        // Add legend
+        //const legendData = [
+        // { label: "Current Inventory", color: "steelblue" },
+        // { label: "Total Capacity", color: "lightsteelblue" }
+        //];
+
+ 
+
+        const legend = svg.append("g")
+            .attr("transform", `translate(${width - margin.right - 100}, ${margin.top})`)
+            .selectAll("g")
+            .data(legendData)
+            .join("g")
+            .attr("transform", (d, i) => `translate(0,${i * 20})`);
+
+    
+        legend.append("rect")
+            .attr("width", 18)
+            .attr("height", 18)
+            .attr("fill", d => d.color);
+
+
+        legend.append("text")
+            .attr("x", 24)
+            .attr("y", 9)
+            .attr("dy", "0.35em")
+            .text(d => d.label);
+
+        </script>
+    </body>
+</html>
